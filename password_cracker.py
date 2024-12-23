@@ -1,44 +1,50 @@
 import hashlib
 
-def crack_sha1_hash(hash, use_salts = False):
+def crack_sha1_hash(hash, use_salts=False):
+    # Load passwords
     passwords_arr = []
-    read_and_add_to_arr("top-10000-passwords.txt",arr)
+    read_and_add_to_arr("top-10000-passwords.txt", passwords_arr)
 
+    # If using salts
     if use_salts:
-        top_salt_passwords = {}
         top_salts = []
         read_and_add_to_arr("known-salts.txt", top_salts)
-        
-        for baslt in top_salts:
-            for bpassword in passwords_arr:
-                prepended = hashlib.sha1(bsalt + bpassword).hexdigest()
-                appened = hashlib.sha1(bpassword +bsalt).hexdigest()
-                top_salt_passwords[prepended] = bpassword.decode("utf-8")
-                top_salt_passwords[appened] = bpassword.decode("utf-8")
-        if hash in top_salt_passwords:
-            return top_salt_passwords[hash]
+
+        # Generate salted hashes
+        salted_hashes = generate_salted_hashes(passwords_arr, top_salts)
+        if hash in salted_hashes:
+            return salted_hashes[hash]
+
+    # Generate unsalted hashes
     passwords_dict = {}
-    for p in passwords_arr:
-        hash_line = hashlib.sha1(p).hexdigest()
-        passwords_dict[hash_line] = p.decode(utf-8)
-    
+    for password in passwords_arr:
+        hash_line = hashlib.sha1(password).hexdigest()
+        passwords_dict[hash_line] = password.decode("utf-8")
+
+    # Check hash
     if hash in passwords_dict:
         return passwords_dict[hash]
 
-    return "PASSWORDS NOT IN DATABASE"
-
-        
-
-    print(passwords_arr) #Prints the arr list to the console, showing all the passwords read from the file in their raw binary format.
-    return "PASSWORD NOT IN DATABASE" #Regardless of the input, the function always returns "PASSWORD NOT IN DATABASE". This is likely a placeholder and not the final logic. 
-
-   
+    return "PASSWORD NOT IN DATABASE"
 
 
-def read_and_add_to_arr(file_name,arr):
-      with open("top-10000-passwords.txt", "rb") as f:
-        line = f.readline().strip() #Reads one line from the file and removes any leading or trailing whitespace (e.g., \n).
-        while line: #If line is not empty, 
-            arr.append(line) #it appends the password to the arr list.
-            line = f.readline().strip() #Continues reading until the file is fully read (when line becomes empty).
-    
+def generate_salted_hashes(passwords, salts):
+    salted_hashes = {}
+    for salt in salts:
+        for password in passwords:
+            prepended = hashlib.sha1(salt + password).hexdigest()
+            appended = hashlib.sha1(password + salt).hexdigest()
+            salted_hashes[prepended] = password.decode("utf-8")
+            salted_hashes[appended] = password.decode("utf-8")
+    return salted_hashes
+
+
+def read_and_add_to_arr(file_name, arr):
+    try:
+        with open(file_name, "rb") as f:
+            line = f.readline().strip()
+            while line:
+                arr.append(line)
+                line = f.readline().strip()
+    except FileNotFoundError:
+        print(f"Error: File '{file_name}' not found.")
